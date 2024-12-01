@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <memory>
 #include <iomanip>
+#include <chrono>
 
 struct data{
     float min;
@@ -131,6 +132,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    auto start = std::chrono::high_resolution_clock::now();
+
     FileReader reader(argv[1]);
     reader.read();
 
@@ -165,6 +168,11 @@ int main(int argc, char *argv[]) {
     }
 
     std::cout << "}" << std::endl;
+
+    auto end = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double> diff = end-start;
+    std::cout << "Time taken: " << diff.count() << "s" << std::endl;
 
     return 0;
 }
