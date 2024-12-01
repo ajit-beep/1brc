@@ -7,7 +7,14 @@
 #include <memory>
 #include <iomanip>
 
+struct data{
+    float min;
+    float max;
+    double sum;
+    uint64_t count;
+};
 
+std::unordered_map<std::string, data> g_data;
 
 class FileReader {
 public:
@@ -17,7 +24,7 @@ public:
     std::vector<char> m_buffer;
 
     FileReader(const std::string& fileName) : m_buffer(BUFFER_SIZE) {
-        m_ifst.open(fileName, std::ios::in | std::ios::binary);
+        m_ifst.open(fileName, std::ios::in);
 
         if(!m_ifst){
             std::cerr << "Error opening in File: " << fileName << std::endl;
@@ -30,14 +37,6 @@ public:
 
 };
 
-struct data{
-    double min;
-    double max;
-    double sum;
-    uint64_t count;
-};
-
-std::unordered_map<std::string, data> g_data;
 
 void FileReader::read() {
     std::string residual;
@@ -65,22 +64,30 @@ void FileReader::read() {
             std::string line = chunk.substr(pos, next_line - pos);
             pos = next_line + 1;
 
+            // Remove trailing '\r' if present
+            if (!line.empty() && line.back() == '\r') {
+                line.pop_back();
+            }
+
             // parse the line
             size_t sep_pos = line.find(';');
             if(sep_pos != std::string::npos) {
                 std::string station = line.substr(0, sep_pos);
-                double temp = std::stod(line.substr(sep_pos+1));
+                float temp = std::stof(line.substr(sep_pos+1));
+
+                // std::cerr << "Station: " << station <<  std::endl;
+                // std::cerr << "Parsed Temperature: " << temp << std::endl;
 
                 auto& entry = g_data[station];
                 if(entry.count == 0){
                     entry.max = entry.min = temp;
                     entry.sum = temp;
-                    entry.count++;
+                    entry.count = 1;
                 }else {
                     if(temp < entry.min) entry.min = temp;
                     if(temp > entry.max) entry.max = temp;
                     entry.sum += temp;
-                    entry.count++;
+                    entry.count += 1;
                 }
             } else {
                 //ignore malformed lines;
@@ -93,18 +100,21 @@ void FileReader::read() {
         size_t sep_pos = line.find(';');
         if(sep_pos != std::string::npos) {
             std::string station = line.substr(0, sep_pos);
-            double temp = std::stod(line.substr(sep_pos+1));
+            float temp = std::stof(line.substr(sep_pos+1));
+
+            // std::cerr << "Station: " << station <<  std::endl;
+            // std::cerr << "Parsed Temperature: " << temp << std::endl;
 
             auto& entry = g_data[station];
             if(entry.count == 0){
                 entry.max = entry.min = temp;
                 entry.sum = temp;
-                entry.count++;
+                entry.count = 1;
             }else {
                 if(temp < entry.min) entry.min = temp;
                 if(temp > entry.max) entry.max = temp;
                 entry.sum += temp;
-                entry.count++;
+                entry.count += 1;
             }
         } else {
             //ignore malformed lines;
@@ -135,8 +145,8 @@ int main(int argc, char *argv[]) {
 
     std::sort(stations.begin(), stations.end());
 
-    // Before the output loop
-    std::cout << "{" << std::fixed << std::setprecision(1);
+    //Before the output loop
+    std::cout << "{" << std::setiosflags(std::ios::fixed | std::ios::showpoint) << std::setprecision(1);
 
     bool first = true;
 
@@ -148,11 +158,9 @@ int main(int argc, char *argv[]) {
         }
         
         const auto& entry = g_data[station];
-        double mean = entry.sum / entry.count;
-        mean = std::round(mean * 10.0) / 10.0; // Round to 1 decimal place
 
-        std::cout << std::fixed << std::setprecision(1)
-          << station << "=" << entry.min << "/" << mean << "/" << entry.max;
+        std::cout
+          << station << "=" << entry.min << "/" << (entry.sum / entry.count) << "/" << entry.max;
 
     }
 

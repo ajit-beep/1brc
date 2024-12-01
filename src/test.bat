@@ -2,7 +2,7 @@
 setlocal EnableDelayedExpansion
 cd /d "%~dp0"
 set "SAMPLES_DIR=test\resources\samples"
-set "PROGRAM=TemperatureAnalyzer.exe"
+set "PROGRAM=..\build\TemperatureAnalyzer.exe"
 
 
 for %%f in ("%SAMPLES_DIR%\measurements-*.txt") do (
